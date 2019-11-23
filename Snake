@@ -1,0 +1,391 @@
+#include <iostream>
+#include <cstdio>
+#include <time.h>
+#include <vector>
+#include <Windows.h>
+#include <WinUser.h>
+#include <limits>
+using namespace std;
+enum{U,D,R,L};
+typedef struct SnakeNode
+{
+    int x;
+    int y;
+    SnakeNode(int a=0,int b=0)
+        :x(a),y(b)
+    {}
+}node,*pnode;
+void Moveconsolecursor(int x,int y)
+{
+    COORD temp;
+    temp.X = x;
+    temp.Y = y;
+    HANDLE handle;
+    handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleCursorPosition(handle,temp);//设定-控制台-光标
+}
+class snake
+{
+    private:
+            vector<node> _array;
+            char** _map;
+            int _row;//行
+            int _col;//列
+            node food;
+            int direction;
+            node gradeposition;
+            int grade;
+    public:
+            snake(int x,int y):_row(x),_col(y)
+            {
+                _map = new char*[_row];
+                for(size_t i = 0; i < _row;i++)
+                {
+                    _map[i] = new char[_col];
+                }
+                gradeposition.x = 2;
+                gradeposition.y = 49;
+            }
+            ~snake()
+            {
+                for(size_t i = 0;i < _row;i++)
+                {
+                    delete[] _map[i];
+                }
+                delete[] _map;
+            }
+    private:
+            void initmap()
+            {
+                for(int i = 0; i<_row; i++)
+                {
+                    for(int j = 0; j<_col; j++)
+                    {
+                        _map[i][j] = ' ';
+                    }
+                }
+                for(int i = 0; i<_row; i++)
+                {
+                    _map[i][0] = '#';
+                    _map[i][_col-1] = '#';
+                }
+                for(int i = 0; i<_col; i++)
+                {
+                    _map[0][i] = '#';
+                    _map[_row-1][i] = '#';
+                }
+            }
+            void clsscreen()
+            {
+                for(int i = 1;i<_col-1;i++)
+                {
+                    for(int j = 1;j<_row-1;j++)
+                    {
+                        Moveconsolecursor(i,j);
+                        std::cout<<' ';
+                    }
+                }
+            }
+            void printmap_ready()
+            {
+                initmap();
+                Moveconsolecursor(0,0);
+                for(int i = 0; i < _row; i++)
+                {
+                    for(int j = 0; j < _col; j++)
+                    {
+                        std::cout<<_map[i][j];
+                    }
+                    std::cout<<'\n';
+                }
+                node temp;
+                temp.x = _row/2 - 2;
+                temp.y = _col/2 - 10;
+                _array.push_back(temp);
+                Moveconsolecursor(temp.y, temp.x);
+                std::cout<<"Press Enter to begin";
+                //char yy;
+                char xx[2];
+                //cin.get(yy);
+                cin.getline(xx,1);
+                if(xx[0] != 'a')
+                {
+                    //system("cls");
+                    /*
+                    Moveconsolecursor(temp.x,temp.y);
+                    std::cout<<'                   ';
+                    */
+                    clsscreen();
+                    return ;
+                }
+                std::cout<<"printmap_ready wrong"<<'\n';
+                Sleep(2000);
+                exit(1);
+            }
+            void printmap_begin()
+            {
+                printmap_ready();
+                Moveconsolecursor(gradeposition.y,gradeposition.x);
+                std::cout<<0<<0;
+                Moveconsolecursor(_array[0].y ,_array[0].x);
+                std::cout<<'#';
+                direction = R;
+            }
+            void setfood_tool(int x,int y)
+            {
+                Moveconsolecursor(y,x);
+                std::cout<<'#';
+                food.x = x;
+                food.y = y;
+                Moveconsolecursor(_array[0].y,_array[0].x);
+            }
+            void setfood()
+            {
+                int x = 0;
+                int y = 0;
+                //time_t i = 0;
+                while(1)
+                {
+                    srand((unsigned)time(NULL));
+                    x = rand() % (_row - 2) + 1;
+                    srand((unsigned)time(NULL)+7);
+                    y = rand() % (_col - 2) + 1;
+                    if(x != _array[0].x && y != _array[0].y) break;
+                }
+                setfood_tool(x,y);
+            }
+            void resetgrade(unsigned int times)
+            {
+                // Moveconsolecursor(gradeposition.y,gradeposition.x);
+                // std::cout<<'  ';
+                grade = (_array.size() - 1) * times;
+                Moveconsolecursor(gradeposition.y,gradeposition.x);
+                if(grade<10)
+                {
+                    std::cout<<0<<(int)grade;
+                }
+                else
+                {
+                    std::cout<<grade;
+                }
+                // Moveconsolecursor(gradeposition.y+2,gradeposition.x);
+                // std::cout<<'  ';
+            }
+            void advance()
+            {
+                for(size_t i = _array.size()-1; i>0 ; i--)
+                {
+                    _array[i].x = _array[i-1].x;
+                    _array[i].y = _array[i-1].y;
+                }
+            }
+            bool checksnake()
+            {
+                if(_array[0].x>0 && _array[0].x<_row-1
+                && _array[0].y>0 && _array[0].y<_col-1)
+                {
+                    for(unsigned int i = 1;i<_array.size();i++)
+                    {
+                        if(_array[i].x == _array[0].x && _array[i].y == _array[0].y)
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                return false;
+            }
+            void clearmemory()
+            {
+                int i = 0;
+                while(!_array.empty())
+                {
+                    _array.pop_back();
+                }
+                food.x = 0;
+                food.y = 0;
+                direction = R;
+                grade = 0;
+                Moveconsolecursor(0,0);
+            }
+            bool drawsnake()
+            {
+                for(unsigned int i = 0;i<_array.size();i++)
+                {
+                    Moveconsolecursor(_array[i].y,_array[i].x);
+                    std::cout<<' ';
+                }
+                switch (direction)
+                {
+                case U:
+                    advance();
+                    _array[0].x -= 1;
+                    break;
+                case D:
+                    advance();
+                    _array[0].x += 1;
+                    break;
+                case L:
+                    advance();
+                    _array[0].y -= 1;
+                    break;
+                case R:
+                    advance();
+                    _array[0].y += 1;
+                    break;
+                }
+                if(!checksnake())
+                {
+                    if(_array[0].x > 0 && _array[0].x < _row-1 && _array[0].y > 0 && _array[0].y < _col-1)
+                    {
+                        Moveconsolecursor(_array[0].y,_array[0].x);
+                        std::cout<<' ';
+                    }
+                    for(int i = 1;i<_array.size();i++)
+                    {
+                        Moveconsolecursor(_array[i].y,_array[i].x);
+                        std::cout<<' ';
+                    }
+                    Moveconsolecursor(food.y,food.x);
+                    std::cout<<' ';
+                    Moveconsolecursor(_col/2 -5,_row/2 - 2);
+                    std::cout<<"GAME OVER";
+                    Sleep(2000);
+                    clsscreen();
+                    std::cout<<' ';
+                    return false;
+                }
+                for(size_t i = 0;i<_array.size();i++)
+                {
+                    Moveconsolecursor(_array[i].y,_array[i].x);
+                    std::cout<<'#';
+                }
+                return true;
+            }
+            void game(unsigned int users = 1,unsigned int times = 2)
+            {
+                node time;
+                time.x = 240-times*40;
+                time.y = time.x/2;
+                unsigned int stop;
+                if(users == 2)
+                {
+                    while(1)
+                    {
+                        if(GetAsyncKeyState('W') && direction != U)
+                        {
+                            direction = U;
+                        }
+                        if(GetAsyncKeyState('S') && direction != D)
+                        {
+                            direction = D;
+                        }
+                        if(GetAsyncKeyState('D') && direction != R)
+                        {
+                            direction = R;
+                        }
+                        if(GetAsyncKeyState('A') && direction != L)
+                        {
+                            direction = L;
+                        }
+                        if(_array[0].x == food.x && _array[0].y == food.y)
+                        {
+                            node temp = _array.back();
+                            _array.push_back(temp);
+                            setfood();
+                            resetgrade(times);
+                        }
+                        if(direction == L || direction == R)
+                        {
+                            stop = time.y;
+                        }
+                        else
+                        {
+                            stop = time.x;
+                        }
+                        if(!drawsnake())
+                        {
+                            return;
+                        }
+                        Sleep(stop);
+                        //cin.ignore(numeric_limits<streamsize>::max(),'\n');
+                    }
+                }
+                else if(users == 1)
+                {
+                    while(1)
+                    {
+                        if(GetAsyncKeyState(VK_UP) && direction != U)
+                        {
+                            direction = U;
+                        }
+                        if(GetAsyncKeyState(VK_DOWN) && direction != D)
+                        {
+                            direction = D;
+                        }
+                        if(GetAsyncKeyState(VK_RIGHT) && direction != R)
+                        {
+                            direction = R;
+                        }
+                        if(GetAsyncKeyState(VK_LEFT) && direction != L)
+                        {
+                            direction = L;
+                        }
+                        if(_array[0].x == food.x && _array[0].y == food.y)
+                        {
+                            node temp = _array.back();
+                            _array.push_back(temp);
+                            setfood();
+                            resetgrade(times);
+                        }
+                        if(direction == L || direction == R)
+                        {
+                            stop = time.y;
+                        }
+                        else
+                        {
+                            stop = time.x;
+                        }
+                        if(!drawsnake())
+                        {
+                            return;
+                        }
+                        Sleep(stop);
+                        //cin.ignore(numeric_limits<streamsize>::max(),'\n');
+                    }
+                } 
+            }
+    public:
+            void play()
+            {
+                while(1)
+                {
+                    char ch;
+                    clearmemory();
+                    printmap_begin();
+                    setfood();
+                    game(1,2);
+                }
+            }
+};
+void windows_set()
+{
+    system("mode con cols=100 lines=26");
+    HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	CONSOLE_CURSOR_INFO CursorInfo;
+	GetConsoleCursorInfo(handle, &CursorInfo);//获取控制台光标信息
+	CursorInfo.bVisible = false; //隐藏控制台光标
+	SetConsoleCursorInfo(handle, &CursorInfo);//设置控制台光标状态
+}
+void test()
+{
+    snake temp(25,100);
+    temp.play();
+}
+int main()
+{
+    windows_set();
+    test();
+    system("pause");
+    return 0;
+}
